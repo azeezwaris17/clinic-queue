@@ -44,6 +44,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy for Render (important for HTTPS)
+app.set('trust proxy', 1);
+
 console.log('🔄 Starting server initialization...');
 
 // ========================
@@ -185,9 +188,11 @@ app.get('/api-docs/json', (_req: Request, res: Response) => {
   res.send(specs);
 });
 
-// Dynamic Swagger setup for production
+// Dynamic Swagger setup for production with HTTPS fix
 app.use('/api-docs', swaggerUi.serve, (req: Request, res: Response, next: NextFunction) => {
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  // Force HTTPS in production for Render
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+  const baseUrl = `${protocol}://${req.get('host')}`;
   
   const swaggerSpec = {
     ...specs,
@@ -218,10 +223,11 @@ app.use('/api-docs', swaggerUi.serve, (req: Request, res: Response, next: NextFu
       docExpansion: 'list',
       tryItOutEnabled: true,
       displayOperationId: true,
+      // Force HTTPS schemes in production
+      schemes: process.env.NODE_ENV === 'production' ? ['https'] : ['http', 'https'],
     },
   })(req, res, next);
 });
-
 console.log('✅ Swagger documentation enabled at /api-docs');
 
 // ========================
