@@ -3,20 +3,24 @@
   "version": "1.0.0",
   "description": "Express.js backend API for ClinicQueue - Patient Appointment, Queue & Triage Management System",
   "main": "dist/app.js",
-  "scripts": {
+ "scripts": {
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn --transpile-only src/app.ts",
     "dev:debug": "cross-env NODE_ENV=development ts-node-dev --inspect --respawn --transpile-only src/app.ts",
     "start:dev": "cross-env NODE_ENV=development ts-node src/app.ts",
     "start:prod": "cross-env NODE_ENV=production node dist/app.js",
     "start:test": "cross-env NODE_ENV=test node dist/app.js",
     "prestart": "npm run build",
-    "start": "cross-env NODE_ENV=production node dist/app.js",
+    "start": "cross-env NODE_ENV=production node --max-old-space-size=1024 dist/app.js",
     "prebuild": "npm run clean",
-    "build": "tsc",
+    "build": "node --max-old-space-size=4096 node_modules/typescript/bin/tsc",
     "build:dev": "cross-env NODE_ENV=development npm run build",
     "build:prod": "cross-env NODE_ENV=production npm run build",
     "build:test": "cross-env NODE_ENV=test npm run build",
     "postbuild": "echo 'Build completed successfully!'",
+
+    "render-build": "npm install && npm run build",
+    "render-start": "node --max-old-space-size=1024 dist/app.js",
+    
     "docs:generate": "node scripts/generate-docs.js",
     "docs:serve": "npx http-server docs/ -p 8080",
     "docs": "npm run docs:generate && npm run docs:serve",
