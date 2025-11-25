@@ -32,7 +32,7 @@ const options: swaggerJsdoc.Options = {
         description: 'Development server'
       },
       {
-        url: 'https://api.clinic.com/api',
+        url: 'https://clinic-queue-backend-0st9.onrender.com',
         description: 'Production server'
       }
     ],
