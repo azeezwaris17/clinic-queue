@@ -3,7 +3,7 @@
  * ClinicQueue Backend Server - Complete with All Middleware
  */
 
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import { connectDB } from './config/database';
@@ -51,7 +51,7 @@ console.log('🔄 Starting server initialization...');
 // ========================
 
 // Add request logging at the very top
-app.use((req, _res, next) => {
+app.use((req: Request, _res: Response, next: NextFunction) => {
   console.log(`📨 INCOMING REQUEST: ${req.method} ${req.path}`);
   next();
 });
@@ -69,30 +69,34 @@ app.use(corsHeaders);
 app.use(additionalSecurityHeaders);
 console.log('✅ Security middleware loaded');
 
-// 2. Enhanced CORS Configuration
+// 2. Enhanced CORS Configuration for Production
 console.log('🌐 Setting up CORS middleware...');
-const corsOptions = {
-  origin: function (origin: string | undefined, callback: any) {
-    // Allow requests with no origin (like mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
-    
-    // Allow Swagger UI (served from same domain) and common dev origins
-    const isAllowedOrigin = 
-      origin.includes('localhost:5000') || 
-      origin.includes('clinic-queue-backend.onrender.com') ||
-      origin.includes('127.0.0.1:5000') ||
-      allowedOrigins.includes('*') || 
-      allowedOrigins.includes(origin);
-    
-    if (isAllowedOrigin) {
-      callback(null, true);
-    } else {
-      console.log('🚫 CORS blocked origin:', origin);
-      callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
-    }
-  },
+
+// CORS callback function with proper typing
+const corsOriginCallback = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  // Allow requests with no origin (like mobile apps, curl, etc.)
+  if (!origin) return callback(null, true);
+  
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [];
+  
+  // Allow current Render domain and common patterns
+  const isAllowedOrigin = 
+    origin.includes('localhost') || 
+    origin.includes('127.0.0.1') ||
+    origin.includes('onrender.com') || // Allow all Render subdomains
+    allowedOrigins.includes('*') || 
+    allowedOrigins.includes(origin);
+  
+  if (isAllowedOrigin) {
+    callback(null, true);
+  } else {
+    console.log('🚫 CORS blocked origin:', origin);
+    callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
+  }
+};
+
+const corsOptions: cors.CorsOptions = {
+  origin: corsOriginCallback,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -142,82 +146,81 @@ connectDB().then(async () => {
 /**
  * Welcome page - Root endpoint
  */
-app.get('/', (req, res) => {
+app.get('/', (req: Request, res: Response) => {
   const baseUrl = `${req.protocol}://${req.get('host')}`;
   
   res.json({
-    message: '🚀 ClinicQueue Backend API is running!',
+    message: '🏥 ClinicQueue Management System API',
+    description: 'A comprehensive backend service for managing clinic operations, patient queues, and medical appointments',
     environment: process.env.NODE_ENV || 'development',
     version: '1.0.0',
-    documentation: `${baseUrl}/api-docs`,
-    health: `${baseUrl}/api/health`,
-    endpoints: {
-      auth: `${baseUrl}/api/auth`,
-      patients: `${baseUrl}/api/patients`,
-      visits: `${baseUrl}/api/visits`,
-      queue: `${baseUrl}/api/queue`,
-      appointments: `${baseUrl}/api/appointments`,
-      staff: `${baseUrl}/api/staff`
+    timestamp: new Date().toISOString(),
+    documentation: {
+      message: 'For complete API documentation and interactive testing, visit:',
+      swagger: `${baseUrl}/api-docs`
     },
-    quickStart: {
-      login: 'POST /api/auth/login',
-      register: 'POST /api/auth/register',
-      healthCheck: 'GET /api/health'
+    system: {
+      status: 'operational',
+      health: `${baseUrl}/api/health`
     },
-    adminCredentials: process.env.NODE_ENV === 'development' ? {
-      email: 'admin@clinic.com',
-      password: 'Admin123!',
-      note: 'Change this password immediately in production!'
-    } : undefined
+    notice: 'This API provides secure endpoints for clinic management. All endpoints require proper authentication and authorization.',
   });
 });
 
 /**
  * Redirect from /docs to /api-docs
  */
-app.get('/docs', (_req, res) => {
+app.get('/docs', (_req: Request, res: Response) => {
   res.redirect('/api-docs');
 });
 
 // ========================
-// SWAGGER DOCUMENTATION 
+// SWAGGER DOCUMENTATION - PRODUCTION READY
 // ========================
 console.log('📚 Setting up Swagger documentation...');
 
 // Serve Swagger JSON
-app.get('/api-docs/json', (_req, res) => {
+app.get('/api-docs/json', (_req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(specs);
 });
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
-  explorer: true,
-  customSiteTitle: 'ClinicQueue API Documentation',
-  customCss: `
-    .swagger-ui .topbar { display: none }
-    .swagger-ui .information-container { background: #f8f9fa; padding: 20px; border-radius: 8px; }
-    .swagger-ui .btn { background: #007bff; border-color: #007bff; }
-  `,
-  swaggerOptions: {
-    persistAuthorization: true,
-    displayRequestDuration: true,
-    filter: true,
-    showExtensions: true,
-    showCommonExtensions: true,
-    defaultModelsExpandDepth: 2,
-    defaultModelExpandDepth: 2,
-    docExpansion: 'list',
-    tryItOutEnabled: true,
-    displayOperationId: true,
-    // Set the server URL for "Try It Out" feature
-    urls: [
+// Dynamic Swagger setup for production
+app.use('/api-docs', swaggerUi.serve, (req: Request, res: Response, next: NextFunction) => {
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  
+  const swaggerSpec = {
+    ...specs,
+    servers: [
       {
-        url: '/api-docs/json',
-        name: 'ClinicQueue API v1'
+        url: baseUrl,
+        description: process.env.NODE_ENV === 'production' ? 'Production Server' : 'Development Server'
       }
     ]
-  },
-}));
+  };
+
+  return swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customSiteTitle: 'ClinicQueue API Documentation',
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .information-container { background: #f8f9fa; padding: 20px; border-radius: 8px; }
+      .swagger-ui .btn { background: #007bff; border-color: #007bff; }
+    `,
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      filter: true,
+      showExtensions: true,
+      showCommonExtensions: true,
+      defaultModelsExpandDepth: 2,
+      defaultModelExpandDepth: 2,
+      docExpansion: 'list',
+      tryItOutEnabled: true,
+      displayOperationId: true,
+    },
+  })(req, res, next);
+});
 
 console.log('✅ Swagger documentation enabled at /api-docs');
 
@@ -264,7 +267,6 @@ console.log('✅ Error handlers configured');
 app.listen(PORT, () => {
   const environment = process.env.NODE_ENV || 'development';
   const baseUrl = `http://localhost:${PORT}`;
-  const renderUrl = `https://clinic-queue-backend.onrender.com`;
   
   console.log(`\n🎉 SERVER STARTED SUCCESSFULLY!`);
   console.log(`🚀 ClinicQueue Backend Server running on port ${PORT} in ${environment} mode`);
@@ -277,23 +279,17 @@ app.listen(PORT, () => {
 
   console.log(`\n📚 DOCUMENTATION & TESTING:`);
   console.log(`   🔗 Local:      ${baseUrl}/api-docs`);
-  console.log(`   🌐 Production: ${renderUrl}/api-docs`);
   console.log(`   📖 API Spec:   ${baseUrl}/api-docs/json`);
 
   console.log(`\n🏥 API ENDPOINTS (Local):`);
   console.log(`   🏠 Welcome:    ${baseUrl}/`);
   console.log(`   ❤️  Health:     ${baseUrl}/api/health`);
   console.log(`   🔐 Auth:       ${baseUrl}/api/auth`);
-  console.log(`   👥 Patients:   ${baseUrl}/api/patients`);
-  console.log(`   🏥 Visits:     ${baseUrl}/api/visits`);
-  console.log(`   📋 Queue:      ${baseUrl}/api/queue`);
-  console.log(`   📅 Appointments: ${baseUrl}/api/appointments`);
-  console.log(`   👨‍⚕️ Staff:      ${baseUrl}/api/staff`);
 
   console.log(`\n🔧 QUICK START:`);
-  console.log(`   1. Visit ${baseUrl}/api-docs for interactive API testing`);
+  console.log(`   1. Visit the /api-docs endpoint for interactive API testing`);
   console.log(`   2. Use "Try It Out" feature in Swagger UI`);
-  console.log(`   3. Test health endpoint: ${baseUrl}/api/health`);
+  console.log(`   3. Test health endpoint: /api/health`);
   console.log(`   4. Login with admin credentials to access protected routes`);
   
   if (environment === 'development') {
