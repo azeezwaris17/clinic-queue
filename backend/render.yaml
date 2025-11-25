@@ -1,0 +1,34 @@
+# render.yaml - Simplified Production Ready
+services:
+  - type: web
+    name: clinic-queue-backend
+    env: node
+    plan: free
+    region: ohio
+    repo: https://github.com/your-username/clinic-queue
+    rootDir: backend
+    buildCommand: |
+      npm ci --only=production && 
+      npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        value: b55b3eb36a04ff0a016c2a7e15b76dd7a9c1ba0f9722eec678d07a1175bf2e5ea2f987f0cbcb7a829ed37035ebc15db8ea374e72a158408da89853a62b598bb8
+      - key: MONGODB_URI
+        value: mongodb+srv://clinic-queue-prod:5ED6e8wqEbD0b4i9@atlascluster.ox91r7b.mongodb.net/clinic_queue_production?retryWrites=true&w=majority&appName=AtlasCluster
+     - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://clinic-queue-backend.onrender.com
+      - key: ALLOWED_ORIGINS
+        value: https://clinic-queue-backend.onrender.com
+      - key: BCRYPT_SALT_ROUNDS
+        value: 12
+      - key: JWT_EXPIRES_IN
+        value: 24h
+    autoDeploy: true

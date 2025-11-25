@@ -1,0 +1,852 @@
+{
+  "info": {
+    "name": "ClinicQueue API",
+    "description": "Complete Healthcare Management System API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🏥 Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/health",
+          "host": ["{{base_url}}"],
+          "path": ["api", "health"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Staff Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"emily.carter@clinic.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('token', response.token);",
+                  "    pm.environment.set('doctor_token', response.token);",
+                  "    ",
+                  "    // Set role-specific tokens based on login",
+                  "    if (response.staff.role === 'admin') {",
+                  "        pm.environment.set('admin_token', response.token);",
+                  "    } else if (response.staff.role === 'doctor') {",
+                  "        pm.environment.set('doctor_token', response.token);",
+                  "    } else if (response.staff.role === 'nurse') {",
+                  "        pm.environment.set('nurse_token', response.token);",
+                  "    } else if (response.staff.role === 'receptionist') {",
+                  "        pm.environment.set('receptionist_token', response.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@clinic.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('admin_token', response.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verify Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Register New Staff (Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new.doctor@clinic.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"New\",\n  \"lastName\": \"Doctor\",\n  \"role\": \"doctor\",\n  \"phone\": \"5559999999\",\n  \"specialty\": \"Pediatrics\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 Patient Management",
+      "item": [
+        {
+          "name": "Get All Patients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/patients",
+              "host": ["{{base_url}}"],
+              "path": ["api", "patients"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.length > 0) {",
+                  "        pm.environment.set('patient_id', response.data[0]._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search Patients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/patients/search?query=john",
+              "host": ["{{base_url}}"],
+              "path": ["api", "patients", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "john"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Patient by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/patients/{{patient_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "patients", "{{patient_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Create New Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Michael\",\n  \"lastName\": \"Brown\",\n  \"email\": \"michael.brown@example.com\",\n  \"phone\": \"5551239876\",\n  \"dateOfBirth\": \"1982-05-20\",\n  \"gender\": \"male\",\n  \"address\": \"789 Oak Lane\",\n  \"city\": \"Springfield\",\n  \"state\": \"IL\",\n  \"zipCode\": \"62706\",\n  \"allergies\": [\"Sulfa\"],\n  \"currentMedications\": [\"Metoprolol 50mg daily\"],\n  \"medicalHistory\": [\"Hypertension\"],\n  \"emergencyContact\": {\n    \"name\": \"Susan Brown\",\n    \"relationship\": \"Wife\",\n    \"phone\": \"5559871234\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/patients",
+              "host": ["{{base_url}}"],
+              "path": ["api", "patients"]
+            }
+          }
+        },
+        {
+          "name": "Update Patient",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"5558889999\",\n  \"allergies\": [\"Sulfa\", \"Penicillin\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/patients/{{patient_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "patients", "{{patient_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Patient Visit History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/patients/{{patient_id}}/visits",
+              "host": ["{{base_url}}"],
+              "path": ["api", "patients", "{{patient_id}}", "visits"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚑 Patient Check-in & Visits",
+      "item": [
+        {
+          "name": "Patient Check-in (Public)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"David\",\n  \"lastName\": \"Wilson\",\n  \"email\": \"david.wilson@example.com\",\n  \"phone\": \"5554443333\",\n  \"dateOfBirth\": \"1995-08-15\",\n  \"gender\": \"male\",\n  \"symptoms\": \"Severe headache, nausea, and sensitivity to light for 3 hours\",\n  \"temperature\": 100.5,\n  \"heartRate\": 95,\n  \"bloodPressureSystolic\": 145,\n  \"bloodPressureDiastolic\": 90,\n  \"painLevel\": 7,\n  \"allergies\": \"None\",\n  \"medications\": \"Ibuprofen as needed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/visits/check-in",
+              "host": ["{{base_url}}"],
+              "path": ["api", "visits", "check-in"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('visit_id', response.visit.id);",
+                  "    console.log('Tracking Token:', response.trackingToken);",
+                  "    console.log('Triage Level:', response.visit.triageLevel);",
+                  "    console.log('Estimated Wait:', response.visit.estimatedWaitTime + ' minutes');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Visit Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/visits/{{visit_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "visits", "{{visit_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Visit Notes",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Patient diagnosed with migraine. Prescribed rest and hydration. Follow up if symptoms persist.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/visits/{{visit_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "visits", "{{visit_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Visit Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/visits/stats/overview",
+              "host": ["{{base_url}}"],
+              "path": ["api", "visits", "stats", "overview"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Queue Management",
+      "item": [
+        {
+          "name": "Get Current Queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/queue",
+              "host": ["{{base_url}}"],
+              "path": ["api", "queue"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.length > 0) {",
+                  "        pm.environment.set('queue_id', response.data[0]._id);",
+                  "        ",
+                  "        // Log queue status",
+                  "        console.log('Queue Count:', response.count);",
+                  "        response.data.forEach((entry, index) => {",
+                  "            console.log(`${index + 1}. ${entry.patient.firstName} ${entry.patient.lastName} - ${entry.priority.toUpperCase()} - ${entry.status}`);",
+                  "        });",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Optimized Queue View",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/queue/current",
+              "host": ["{{base_url}}"],
+              "path": ["api", "queue", "current"]
+            }
+          }
+        },
+        {
+          "name": "Get Queue Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/queue/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "queue", "stats"]
+            }
+          }
+        },
+        {
+          "name": "Update Queue Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in-progress\",\n  \"doctorId\": \"{{doctor_id}}\",\n  \"assignedRoom\": \"Exam-3\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/queue/{{queue_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "queue", "{{queue_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Call Next Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{doctor_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorId\": \"{{doctor_id}}\",\n  \"assignedRoom\": \"Exam-2\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/queue/call-next",
+              "host": ["{{base_url}}"],
+              "path": ["api", "queue", "call-next"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📅 Appointment Management",
+      "item": [
+        {
+          "name": "Get All Appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "appointments"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.length > 0) {",
+                  "        pm.environment.set('appointment_id', response.data[0]._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Check Doctor Availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments/availability?doctorId={{doctor_id}}&startTime=2024-02-01T14:00:00Z&duration=30",
+              "host": ["{{base_url}}"],
+              "path": ["api", "appointments", "availability"],
+              "query": [
+                {
+                  "key": "doctorId",
+                  "value": "{{doctor_id}}"
+                },
+                {
+                  "key": "startTime",
+                  "value": "2024-02-01T14:00:00Z"
+                },
+                {
+                  "key": "duration",
+                  "value": "30"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create New Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"doctorId\": \"{{doctor_id}}\",\n  \"scheduledTime\": \"2024-02-15T10:00:00Z\",\n  \"duration\": 45,\n  \"reasonForVisit\": \"Annual physical examination and blood work\",\n  \"appointmentType\": \"checkup\",\n  \"chiefComplaint\": \"Routine health maintenance\",\n  \"notes\": \"Patient requests full blood panel\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/appointments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "appointments"]
+            }
+          }
+        },
+        {
+          "name": "Get Appointment by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "appointments", "{{appointment_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Appointment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration\": 60,\n  \"notes\": \"Extended appointment for comprehensive evaluation\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "appointments", "{{appointment_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Appointment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancellationReason\": \"Patient rescheduled due to conflict\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/appointments/{{appointment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "appointments", "{{appointment_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "👨‍⚕️ Staff Management",
+      "item": [
+        {
+          "name": "Get All Staff (Admin Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/staff",
+              "host": ["{{base_url}}"],
+              "path": ["api", "staff"]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    const doctor = response.data.find(staff => staff.role === 'doctor');",
+                  "    if (doctor) {",
+                  "        pm.environment.set('doctor_id', doctor._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Doctors",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/staff/doctors",
+              "host": ["{{base_url}}"],
+              "path": ["api", "staff", "doctors"]
+            }
+          }
+        },
+        {
+          "name": "Get Current Staff Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/staff/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "staff", "me"]
+            }
+          }
+        },
+        {
+          "name": "Update Staff Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"5551234567\",\n  \"specialty\": \"Advanced Cardiology\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/staff/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "staff", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🧪 Test Scenarios",
+      "item": [
+        {
+          "name": "🔴 HIGH Priority Check-in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Emergency\",\n  \"lastName\": \"Patient\",\n  \"email\": \"emergency@example.com\",\n  \"phone\": \"5559119111\",\n  \"dateOfBirth\": \"1970-01-01\",\n  \"gender\": \"male\",\n  \"symptoms\": \"Severe chest pain radiating to left arm, sweating, shortness of breath\",\n  \"temperature\": 99.8,\n  \"heartRate\": 135,\n  \"bloodPressureSystolic\": 180,\n  \"bloodPressureDiastolic\": 110,\n  \"painLevel\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/visits/check-in",
+              "host": ["{{base_url}}"],
+              "path": ["api", "visits", "check-in"]
+            }
+          }
+        },
+        {
+          "name": "🟡 MEDIUM Priority Check-in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Urgent\",\n  \"lastName\": \"Case\",\n  \"email\": \"urgent@example.com\",\n  \"phone\": \"5552223333\",\n  \"dateOfBirth\": \"1985-06-15\",\n  \"gender\": \"female\",\n  \"symptoms\": \"High fever, vomiting, dehydration\",\n  \"temperature\": 103.2,\n  \"heartRate\": 105,\n  \"bloodPressureSystolic\": 130,\n  \"bloodPressureDiastolic\": 85,\n  \"painLevel\": 6\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/visits/check-in",
+              "host": ["{{base_url}}"],
+              "path": ["api", "visits", "check-in"]
+            }
+          }
+        },
+        {
+          "name": "🟢 LOW Priority Check-in",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Routine\",\n  \"lastName\": \"Visit\",\n  \"email\": \"routine@example.com\",\n  \"phone\": \"5554445555\",\n  \"dateOfBirth\": \"1992-03-20\",\n  \"gender\": \"female\",\n  \"symptoms\": \"Seasonal allergies, runny nose\",\n  \"temperature\": 98.6,\n  \"heartRate\": 72,\n  \"bloodPressureSystolic\": 118,\n  \"bloodPressureDiastolic\": 78,\n  \"painLevel\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/visits/check-in",
+              "host": ["{{base_url}}"],
+              "path": ["api", "visits", "check-in"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
