@@ -6,10 +6,16 @@
  * and audit trails for security and debugging purposes.
  */
 
-
 import { Request, Response, NextFunction } from 'express';
 
-
+// Extend Express Request type to include requestId
+declare global {
+  namespace Express {
+    interface Request {
+      requestId: string;
+    }
+  }
+}
 
 /**
  * Enhanced request logger with performance metrics
